@@ -6,7 +6,7 @@ require 'nokogiri'
 class Crawler
 	IEEEX_URL = "http://ieeexplore.ieee.org/search/searchresult.jsp"
 
-	def initialize concurrency, cookie
+	def initialize concurrency, output_folder, cookie
 		@params = {
 			reload: true,
   			rowsPerPage: 100,
@@ -14,6 +14,7 @@ class Crawler
   		}
 
   		@cookie = cookie || ""
+  		@output_folder = output_folder
 
   		@hydra = Typhoeus::Hydra.new(max_concurrency: concurrency)
 	end
@@ -67,7 +68,7 @@ class Crawler
 		nodeset.css(".detail").each do |result|
 			title = result.children.css("h3").text.strip
 			link = (result.children.css(".links a").find {|a| a.text.strip == "PDF" })['href']
-			puts link
+			#puts link
 			arnumber = link[/.*arnumber=([^\&]*)/,1]
 			
 			puts "Queueing \"#{title}\""
@@ -90,7 +91,7 @@ class Crawler
 		request.on_complete do |response|
 			#puts response.body
 			url = Nokogiri::HTML(response.body).css("html frameset frame[src]")[1]['src']
-			filename = "output/" + url[/.*\/([^\.pdf]*)/,1] + ".pdf"
+			filename = @output_folder + url[/.*\/([^\.pdf]*)/,1] + ".pdf"
 
 			request_pdf url, filename
 		end
