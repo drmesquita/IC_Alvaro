@@ -6,15 +6,15 @@ require 'nokogiri'
 class Crawler
 	IEEEX_URL = "http://ieeexplore.ieee.org/search/searchresult.jsp"
 
-	def initialize concurrency, output_folder, cookie
+	def initialize concurrency, output_folder, nodownload="false"
 		@params = {
 			reload: true,
   			rowsPerPage: 100,
   			queryText: "",
   		}
 
-  		@cookie = cookie || ""
   		@output_folder = output_folder
+  		@nodownload = nodownload
 
   		@hydra = Typhoeus::Hydra.new(max_concurrency: concurrency)
 	end
@@ -26,10 +26,13 @@ class Crawler
 	def crawl
 		initial_response = build_request.run
 		nodeset = Nokogiri::HTML(initial_response.body)
-		
+		@cookie = (initial_response.headers["Set-Cookie"]).join(" ").gsub("path=/","")
+
 		n_results = get_n_results(nodeset)
-		puts n_results.to_s + "results found"
+		puts n_results.to_s + " results found"
 		
+		return if @nodownload == "true"
+
 		n_pages = get_n_pages(n_results)
 		process_result_page(nodeset)
 
@@ -63,7 +66,7 @@ class Crawler
 	def get_n_pages n_results
 		 (n_results.to_f / @params[:rowsPerPage]).ceil
 	end
-
+	
 	def process_result_page nodeset
 		nodeset.css(".detail").each do |result|
 			title = result.children.css("h3").text.strip

@@ -6,7 +6,8 @@ class ClParser
 		cookie: "",
 		concurrency: 15,
 		query: "",
-		out: ""
+		out: "",
+		nodownload: "false"
 	}
 
 	def initialize args=nil
